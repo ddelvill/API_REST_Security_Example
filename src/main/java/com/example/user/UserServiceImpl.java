@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -39,6 +40,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteByEmail(String email) {
         userRepository.deleteByEmail(email);
     }
@@ -52,9 +54,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User update(User user) {
-        user.setRole(user.getRole());
-        return userRepository.save(user);
+
+        User existingUser = userRepository.findByEmail(user.getEmail())
+            .orElseThrow(() -> new UsernameNotFoundException("No existe user con dicho email"));
+
+            existingUser.setFirstName(user.getFirstName());
+            existingUser.setLastName(user.getLastName());
+            existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
+            existingUser.setRole(user.getRole());
+
+            User userUpdated = userRepository.save(existingUser);
+
+            return userUpdated;
+        
     }
     
 }
